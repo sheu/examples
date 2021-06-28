@@ -60,9 +60,9 @@ fun main(args: Array<String>) {
   val numMessages = 10
   // `use` will execute block and close producer automatically  
   KafkaProducer<String, DataRecord>(props).use { producer ->
-    repeat(numMessages) { i ->
+    repeat(numMessages) { _ ->
       val key = "alice"
-      val record = DataRecord(i.toLong())
+      val record = DataRecord(System.currentTimeMillis())
       println("Producing record: $key\t$record")
 
       producer.send(ProducerRecord(topic, key, record)) { m: RecordMetadata, e: Exception? ->
@@ -89,11 +89,11 @@ fun main(args: Array<String>) {
     while (true) {
       totalCount = consumer
           .poll(ofMillis(100))
-          .fold(totalCount, { accumulator, record ->
+          .fold(totalCount) { accumulator, record ->
             val newCount = accumulator + 1
-            println("Consumed record with key ${record.key()} and value ${record.value()}, and updated total count to $newCount")
+            println("Consumed record with key ${record.key()} and value ${record.value()}, and updated total count to $newCount: Latency: ${System.currentTimeMillis() - record.value().count}")
             newCount
-          })
+          }
     }
   }
 
