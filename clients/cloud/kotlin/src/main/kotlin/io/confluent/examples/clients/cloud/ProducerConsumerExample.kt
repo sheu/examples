@@ -19,30 +19,34 @@ package io.confluent.examples.clients.cloud
 
 import io.confluent.examples.clients.cloud.model.DataRecord
 import io.confluent.examples.clients.cloud.util.loadConfig
+import io.confluent.kafka.serializers.KafkaJsonDeserializer
+import io.confluent.kafka.serializers.KafkaJsonDeserializerConfig.JSON_VALUE_TYPE
 import io.confluent.kafka.serializers.KafkaJsonSerializer
-import org.apache.kafka.clients.admin.AdminClient
-import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig.*
+import org.apache.kafka.clients.consumer.ConsumerConfig.*
+import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.errors.TopicExistsException
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
+import java.time.Duration.ofMillis
 import java.util.*
-import java.util.concurrent.ExecutionException
-import kotlin.system.exitProcess
+
 
 
 fun main(args: Array<String>) {
 
   // Load properties from file
-  val props = loadConfig(args[0])
+  val props = Properties(10)
 
   // Create topic if needed
-  val topic = args[1]
-  createTopic(topic, 1, 3, props)
+  val topic = "CrossBoarderTesting"
+
 
   // Add additional properties.
+  props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = "localhost:9092"
   props[ACKS_CONFIG] = "all"
   props[KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.qualifiedName
   props[VALUE_SERIALIZER_CLASS_CONFIG] = KafkaJsonSerializer::class.qualifiedName
@@ -75,7 +79,6 @@ fun main(args: Array<String>) {
     println("$numMessages messages were produced to topic $topic")
   }
 
-val consumerProps = 
    val consumer = KafkaConsumer<String, DataRecord>(props).apply {
     subscribe(listOf(topic))
   }
