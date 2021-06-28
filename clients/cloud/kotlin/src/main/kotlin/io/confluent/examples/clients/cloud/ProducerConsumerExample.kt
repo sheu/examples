@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:JvmName("ProducerExample")
+@file:JvmName("ProducerConsumerExample")
 
 package io.confluent.examples.clients.cloud
 
@@ -32,28 +32,8 @@ import java.util.*
 import java.util.concurrent.ExecutionException
 import kotlin.system.exitProcess
 
-// Create topic in Confluent Cloud
-fun createTopic(topic: String,
-                partitions: Int,
-                replication: Short,
-                cloudConfig: Properties) {
-  val newTopic = NewTopic(topic, partitions, replication)
-
-
-  try {
-    with(AdminClient.create(cloudConfig)) {
-      createTopics(listOf(newTopic)).all().get()
-    }
-  } catch (e: ExecutionException) {
-    if (e.cause !is TopicExistsException) throw e
-  }
-}
 
 fun main(args: Array<String>) {
-  if (args.size != 2) {
-    println("Please provide command line arguments: configPath topic")
-    exitProcess(1)
-  }
 
   // Load properties from file
   val props = loadConfig(args[0])
@@ -66,7 +46,11 @@ fun main(args: Array<String>) {
   props[ACKS_CONFIG] = "all"
   props[KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.qualifiedName
   props[VALUE_SERIALIZER_CLASS_CONFIG] = KafkaJsonSerializer::class.qualifiedName
-  
+  props[KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java.name
+  props[VALUE_DESERIALIZER_CLASS_CONFIG] = KafkaJsonDeserializer::class.java.name
+  props[JSON_VALUE_TYPE] = DataRecord::class.java
+  props[GROUP_ID_CONFIG] = "kotlin_example_group_1"
+  props[AUTO_OFFSET_RESET_CONFIG] = "earliest"
 
   // Produce sample data
   val numMessages = 10
@@ -88,7 +72,26 @@ fun main(args: Array<String>) {
     }
 
     producer.flush()
-    println("10 messages were produced to topic $topic")
+    println("$numMessages messages were produced to topic $topic")
+  }
+
+val consumerProps = 
+   val consumer = KafkaConsumer<String, DataRecord>(props).apply {
+    subscribe(listOf(topic))
+  }
+
+  var totalCount = 0L
+
+  consumer.use {
+    while (true) {
+      totalCount = consumer
+          .poll(ofMillis(100))
+          .fold(totalCount, { accumulator, record ->
+            val newCount = accumulator + 1
+            println("Consumed record with key ${record.key()} and value ${record.value()}, and updated total count to $newCount")
+            newCount
+          })
+    }
   }
 
 }

@@ -28,17 +28,9 @@ import java.time.Duration.ofMillis
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
-
-  if (args.size != 2) {
-    println("Please provide command line arguments: configPath topic")
-    exitProcess(1)
-  }
-
   val topic = args[1]
-
   // Load properties from disk.
   val props = loadConfig(args[0])
-
   // Add additional properties.
   props[KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java.name
   props[VALUE_DESERIALIZER_CLASS_CONFIG] = KafkaJsonDeserializer::class.java.name
